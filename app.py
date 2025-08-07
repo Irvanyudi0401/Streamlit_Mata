@@ -72,8 +72,6 @@ if "halaman" not in st.session_state:
     st.session_state["halaman"] = "Home"
 
 halaman = st.sidebar.selectbox("Navigasi", ["Home", "Deteksi", "Tentang"], index=["Home", "Deteksi", "Tentang"].index(st.session_state["halaman"]))
-
-
 if halaman == "Home":
     st.markdown("<h1 style='text-align: center;'>👁️ Deteksi Penyakit Mata Menggunakan Citra Fundus</h1>", unsafe_allow_html=True)
     st.markdown("## 💬 Apa Itu Citra Fundus?")
@@ -317,6 +315,7 @@ st.markdown("""
     © 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
     </div>
 """, unsafe_allow_html=True)
+
 
 
 
