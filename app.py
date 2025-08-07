@@ -57,15 +57,16 @@ if not os.path.exists(model_weights_path):
 
 # ========== Load model ==========
 try:
-    model = ViTForImageClassification.from_pretrained(model_ckpt)
+    model = ViTForImageClassification.from_pretrained("vit_model", local_files_only=True)
     model.classifier = torch.nn.Linear(model.classifier.in_features, len(class_names))
-    model.load_state_dict(torch.load(model_weights_path, map_location="cpu", weights_only=False))  # ← tambahkan ini
+    model.load_state_dict(torch.load(model_weights_path, map_location="cpu", weights_only=False))
     model.eval()
 except Exception as e:
     st.error(f"❌ Gagal memuat model: {e}")
     st.stop()
 
-processor = AutoImageProcessor.from_pretrained(model_ckpt)
+processor = AutoImageProcessor.from_pretrained("vit_model", local_files_only=True)
+
 st.set_page_config(page_title="Deteksi Penyakit Mata", layout="wide")
 
 # ========== Navigasi ==========
@@ -186,4 +187,5 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
+
 
