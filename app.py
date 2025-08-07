@@ -1,4 +1,15 @@
-
+import streamlit as st
+from PIL import Image
+import torch
+from transformers import ViTForImageClassification, AutoImageProcessor
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+import io
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph, Frame
+from reportlab.lib.styles import getSampleStyleSheet
 
 # --- Inisialisasi Model dan Processor ---
 model_ckpt = "google/vit-base-patch16-224"
@@ -27,6 +38,12 @@ model.eval()
 processor = AutoImageProcessor.from_pretrained(model_ckpt)
 
 st.set_page_config(page_title="Deteksi Penyakit Mata", layout="wide")
+
+if "halaman" not in st.session_state:
+    st.session_state["halaman"] = "Home"
+
+halaman = st.sidebar.selectbox("Navigasi", ["Home", "Deteksi", "Tentang"], index=["Home", "Deteksi", "Tentang"].index(st.session_state["halaman"]))
+
 
 if halaman == "Home":
     st.markdown("<h1 style='text-align: center;'>👁️ Deteksi Penyakit Mata Menggunakan Citra Fundus</h1>", unsafe_allow_html=True)
@@ -271,6 +288,7 @@ st.markdown("""
     © 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
     </div>
 """, unsafe_allow_html=True)
+
 
 
 
