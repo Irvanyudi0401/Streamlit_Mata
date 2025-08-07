@@ -1,58 +1,4 @@
-import streamlit as st
-from PIL import Image
-import torch
-from transformers import ViTForImageClassification, AutoImageProcessor
-import matplotlib.pyplot as plt
-import numpy as np
-import os
-import io
-import gdown
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.platypus import Paragraph, Frame
-from reportlab.lib.styles import getSampleStyleSheet
-
-
-# --- Inisialisasi Model dan Processor ---
-model_ckpt = "google/vit-base-patch16-224"
-model_weights_path = "vit_model.pth"
-file_id = "1AbCDefGHIJKlmnopQRstuv" #ganti sesuai file id
-class_names = ["cataract", "diabetic", "glaucoma", "normal", "non-fundus"]
-
-if not os.path.exists(model_weights_path):
-    st.warning("🔄 Mengunduh model dari Google Drive...")
-    url = f"https://drive.google.com/uc?id={file_id}"
-    gdown.download(url, model_weights_path, quiet=False)
-
-
-# --- Mapping label ke Bahasa Indonesia ---
-label_mapping = {
-    "Cataract": "Katarak",
-    "Diabetic": "Retinopati Diabetik",
-    "Glaucoma": "Glaukoma",
-    "Normal": "Mata Normal",
-    "Non-fundus": "Bukan Gambar Fundus"
-}
-
-
-if not os.path.exists(model_weights_path):
-    st.error(f"Model file '{model_weights_path}' tidak ditemukan. Harap pastikan file tersedia di direktori.")
-    st.stop()
-
-model = ViTForImageClassification.from_pretrained(model_ckpt)
-model.classifier = torch.nn.Linear(model.classifier.in_features, len(class_names))
-model.load_state_dict(torch.load(model_weights_path, map_location=torch.device("cpu")))
-model.eval()
-
-processor = AutoImageProcessor.from_pretrained(model_ckpt)
-
-st.set_page_config(page_title="Deteksi Penyakit Mata", layout="wide")
-
-if "halaman" not in st.session_state:
-    st.session_state["halaman"] = "Home"
-
-halaman = st.sidebar.selectbox("Navigasi", ["Home", "Deteksi", "Tentang"], index=["Home", "Deteksi", "Tentang"].index(st.session_state["halaman"]))
-
+https://github.com/Irvanyudi0401/Streamlit_Mata/edit/main/app.py
 if halaman == "Home":
     st.markdown("<h1 style='text-align: center;'>👁️ Deteksi Penyakit Mata Menggunakan Citra Fundus</h1>", unsafe_allow_html=True)
     st.markdown("## 💬 Apa Itu Citra Fundus?")
@@ -296,3 +242,4 @@ st.markdown("""
     © 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
     </div>
 """, unsafe_allow_html=True)
+
