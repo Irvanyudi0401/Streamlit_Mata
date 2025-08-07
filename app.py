@@ -59,7 +59,7 @@ if not os.path.exists(model_weights_path):
 try:
     model = ViTForImageClassification.from_pretrained(model_ckpt)
     model.classifier = torch.nn.Linear(model.classifier.in_features, len(class_names))
-    model.load_state_dict(torch.load(model_weights_path, map_location="cpu"))
+    model.load_state_dict(torch.load(model_weights_path, map_location="cpu", weights_only=False))  # ← tambahkan ini
     model.eval()
 except Exception as e:
     st.error(f"❌ Gagal memuat model: {e}")
@@ -186,3 +186,4 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
+
