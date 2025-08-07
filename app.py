@@ -178,14 +178,14 @@ elif halaman == "Tentang":
     - **Retinopati Diabetik**: Gangguan retina akibat komplikasi diabetes
     - **Normal**: Tidak terdeteksi gangguan
     """)
-
-
 st.markdown("""
-    <hr style="margin-top: 50px;">
-    <div style="text-align: center; font-size: 13px; color: gray;">
-    © 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
-    </div>
+<hr style="margin-top: 50px;">
+<div style="text-align: center; font-size: 13px; color: gray;">
+© 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
+</div>
 """, unsafe_allow_html=True)
+
+
 
 
 
