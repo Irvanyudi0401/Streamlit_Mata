@@ -6,15 +6,49 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import io
+import requests
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.platypus import Paragraph, Frame
 from reportlab.lib.styles import getSampleStyleSheet
 
-# --- Inisialisasi Model dan Processor ---
+# --- Konfigurasi Model ---
 model_ckpt = "google/vit-base-patch16-224"
 model_weights_path = "vit_model.pth"
 class_names = ["cataract", "diabetic", "glaucoma", "normal", "non-fundus"]
+file_id = "1neG3g7T5xv-2BbB2OZ_LtiFuFmtBOzIa"
+
+# --- Fungsi Unduh dari Google Drive Tanpa gdown ---
+def download_from_gdrive(file_id, dest_path):
+    def get_confirm_token(response):
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                return value
+        return None
+
+    URL = "https://drive.google.com/uc?export=download"
+    session = requests.Session()
+    response = session.get(URL, params={'id': file_id}, stream=True)
+    token = get_confirm_token(response)
+
+    if token:
+        params = {'id': file_id, 'confirm': token}
+        response = session.get(URL, params=params, stream=True)
+
+    with open(dest_path, "wb") as f:
+        for chunk in response.iter_content(32768):
+            if chunk:
+                f.write(chunk)
+
+# --- Unduh Model Jika Belum Ada ---
+if not os.path.exists(model_weights_path):
+    st.info("🔄 Mengunduh model dari Google Drive...")
+    try:
+        download_from_gdrive(file_id, model_weights_path)
+        st.success("✅ Model berhasil diunduh.")
+    except Exception as e:
+        st.error(f"❌ Gagal mengunduh model: {e}")
+        st.stop()
 
 # --- Mapping label ke Bahasa Indonesia ---
 label_mapping = {
@@ -25,18 +59,13 @@ label_mapping = {
     "Non-fundus": "Bukan Gambar Fundus"
 }
 
-
-if not os.path.exists(model_weights_path):
-    st.error(f"Model file '{model_weights_path}' tidak ditemukan. Harap pastikan file tersedia di direktori.")
-    st.stop()
-
+# --- Load Model ---
 model = ViTForImageClassification.from_pretrained(model_ckpt)
 model.classifier = torch.nn.Linear(model.classifier.in_features, len(class_names))
 model.load_state_dict(torch.load(model_weights_path, map_location=torch.device("cpu")))
 model.eval()
 
 processor = AutoImageProcessor.from_pretrained(model_ckpt)
-
 st.set_page_config(page_title="Deteksi Penyakit Mata", layout="wide")
 
 if "halaman" not in st.session_state:
@@ -288,6 +317,7 @@ st.markdown("""
     © 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
     </div>
 """, unsafe_allow_html=True)
+
 
 
 
