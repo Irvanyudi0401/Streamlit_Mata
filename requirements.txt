@@ -1,0 +1,7 @@
+streamlit
+torch
+transformers
+gdown
+Pillow
+matplotlib
+reportlab
