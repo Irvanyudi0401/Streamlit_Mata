@@ -1,4 +1,3 @@
-https://github.com/Irvanyudi0401/Streamlit_Mata/edit/main/app.py
 if halaman == "Home":
     st.markdown("<h1 style='text-align: center;'>👁️ Deteksi Penyakit Mata Menggunakan Citra Fundus</h1>", unsafe_allow_html=True)
     st.markdown("## 💬 Apa Itu Citra Fundus?")
@@ -242,4 +241,5 @@ st.markdown("""
     © 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
     </div>
 """, unsafe_allow_html=True)
+
 
