@@ -169,28 +169,17 @@ elif halaman == "Tentang":
     - Model: `google/vit-base-patch16-224`
     - Framework: PyTorch, Hugging Face Transformers
     - UI: Streamlit
-    """)
-
 
     **Kelas Deteksi:**
     - **Katarak**: Kekeruhan lensa mata
     - **Glaukoma**: Kerusakan saraf optik karena tekanan bola mata
     - **Retinopati Diabetik**: Gangguan retina akibat komplikasi diabetes
     - **Normal**: Tidak terdeteksi gangguan
-    """)
-st.markdown("""
-<hr style="margin-top: 50px;">
-<div style="text-align: center; font-size: 13px; color: gray;">
-© 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
-</div>
-""", unsafe_allow_html=True)
 
-
-
-
-
-
-
-
+    <hr style="margin-top: 50px;">
+    <div style="text-align: center; font-size: 13px; color: gray;">
+    © 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
+    </div>
+    """, unsafe_allow_html=True)
 
 
