@@ -30,9 +30,9 @@ def download_model_zip(file_id, dest_path):
     url = f"https://drive.google.com/uc?id={file_id}"
     gdown.download(url, dest_path, quiet=False)
 
-if not os.path.exists(MODEL_WEIGHTS_PATH):
-    st.info("🔄 Mengunduh model ZIP dari Google Drive...")
-    try:
+try:
+    if not os.path.exists(MODEL_WEIGHTS_PATH):
+        st.info("🔄 Mengunduh model ZIP dari Google Drive...")
         download_model_zip(GDRIVE_FILE_ID, MODEL_ZIP_PATH)
 
         # Ekstrak ZIP
@@ -40,28 +40,31 @@ if not os.path.exists(MODEL_WEIGHTS_PATH):
         with zipfile.ZipFile(MODEL_ZIP_PATH, 'r') as zip_ref:
             zip_ref.extractall(MODEL_DIR)
 
-        # Hapus ZIP setelah ekstrak
         os.remove(MODEL_ZIP_PATH)
 
-        size = os.path.getsize(MODEL_WEIGHTS_PATH) / (1024 * 1024)
-        st.success(f"✅ Model berhasil diunduh & diekstrak ({size:.2f} MB)")
-    except Exception as e:
-        st.error(f"❌ Gagal mengunduh/mengekstrak model: {e}")
-        st.stop()
+        if os.path.exists(MODEL_WEIGHTS_PATH):
+            size = os.path.getsize(MODEL_WEIGHTS_PATH) / (1024 * 1024)
+            st.success(f"✅ Model berhasil diunduh & diekstrak ({size:.2f} MB)")
+        else:
+            st.error("❌ File vit_model.pth tidak ditemukan setelah ekstrak.")
+            st.stop()
+except Exception as e:
+    st.error(f"❌ Gagal mengunduh/mengekstrak model: {e}")
+    st.stop()
 
 # ========== LOAD MODEL ==========
 try:
-    # Load backbone + classifier baru dengan jumlah kelas sesuai CLASS_NAMES
     model = ViTForImageClassification.from_pretrained(
         MODEL_CKPT,
         num_labels=len(CLASS_NAMES),
-        ignore_mismatched_sizes=True  # 🔹 ini kunci untuk hindari size mismatch
+        ignore_mismatched_sizes=True  # Hindari error size mismatch
     )
 
-    # Load bobot hasil training jika memang punya
     if os.path.exists(MODEL_WEIGHTS_PATH):
         state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
         model.load_state_dict(state_dict, strict=False)
+    else:
+        st.warning("⚠ Bobot vit_model.pth tidak ditemukan, menggunakan bobot pretrained.")
 
     model.eval()
     processor = AutoImageProcessor.from_pretrained(MODEL_CKPT)
@@ -183,4 +186,3 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
-
