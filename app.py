@@ -5,15 +5,15 @@ from transformers import ViTForImageClassification, AutoImageProcessor
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import requests
+import gdown
 
-# ========== Konfigurasi ==========
-model_ckpt = "google/vit-base-patch16-224"
-model_weights_path = "vit_model.pth"
-file_id = "1neG3g7T5xv-2BbB2OZ_LtiFuFmtBOzIa"
-class_names = ["cataract", "diabetic", "glaucoma", "normal", "non-fundus"]
+# ========== KONFIGURASI ==========
+MODEL_CKPT = "google/vit-base-patch16-224"
+MODEL_WEIGHTS_PATH = "vit_model.pth"
+GDRIVE_FILE_ID = "1neG3g7T5xv-2BbB2OZ_LtiFuFmtBOzIa"
+CLASS_NAMES = ["cataract", "diabetic", "glaucoma", "normal", "non-fundus"]
 
-label_mapping = {
+LABEL_MAPPING = {
     "Cataract": "Katarak",
     "Diabetic": "Retinopati Diabetik",
     "Glaucoma": "Glaukoma",
@@ -21,63 +21,40 @@ label_mapping = {
     "Non-fundus": "Bukan Gambar Fundus"
 }
 
-# ========== Unduh dari Google Drive ==========
-def download_from_gdrive(file_id, dest_path):
-    def get_confirm_token(response):
-        for key, value in response.cookies.items():
-            if key.startswith("download_warning"):
-                return value
-        return None
+# ========== DOWNLOAD MODEL ==========
+def download_model_from_gdrive(file_id, dest_path):
+    """Unduh file dari Google Drive menggunakan gdown"""
+    url = f"https://drive.google.com/uc?id={file_id}"
+    gdown.download(url, dest_path, quiet=False)
 
-    URL = "https://drive.google.com/uc?export=download"
-    session = requests.Session()
-    response = session.get(URL, params={"id": file_id}, stream=True)
-    token = get_confirm_token(response)
-
-    if token:
-        params = {"id": file_id, "confirm": token}
-        response = session.get(URL, params=params, stream=True)
-
-    with open(dest_path, "wb") as f:
-        for chunk in response.iter_content(32768):
-            if chunk:
-                f.write(chunk)
-
-# ========== Unduh model jika belum tersedia ==========
-if not os.path.exists(model_weights_path):
+if not os.path.exists(MODEL_WEIGHTS_PATH):
     st.info("🔄 Mengunduh model dari Google Drive...")
     try:
-        download_from_gdrive(file_id, model_weights_path)
-        size = os.path.getsize(model_weights_path) / (1024 * 1024)
+        download_model_from_gdrive(GDRIVE_FILE_ID, MODEL_WEIGHTS_PATH)
+        size = os.path.getsize(MODEL_WEIGHTS_PATH) / (1024 * 1024)
         st.success(f"✅ Model berhasil diunduh ({size:.2f} MB)")
     except Exception as e:
         st.error(f"❌ Gagal mengunduh model: {e}")
         st.stop()
 
-# ========== Load model ==========
+# ========== LOAD MODEL ==========
 try:
-    # Inisialisasi model sesuai arsitektur pretrained
     model = ViTForImageClassification.from_pretrained(
-        model_ckpt,
-        num_labels=len(class_names)
+        MODEL_CKPT,
+        num_labels=len(CLASS_NAMES)
     )
-
-    # Load bobot hasil training
-    state_dict = torch.load(model_weights_path, map_location="cpu")
+    state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
     model.load_state_dict(state_dict)
     model.eval()
 
-    # Processor untuk preprocessing gambar
-    processor = AutoImageProcessor.from_pretrained(model_ckpt)
-
+    processor = AutoImageProcessor.from_pretrained(MODEL_CKPT)
 except Exception as e:
     st.error(f"❌ Gagal memuat model: {e}")
     st.stop()
 
-# ========== Streamlit Config ==========
+# ========== KONFIGURASI STREAMLIT ==========
 st.set_page_config(page_title="Deteksi Penyakit Mata", layout="wide")
 
-# ========== Navigasi ==========
 if "halaman" not in st.session_state:
     st.session_state["halaman"] = "Home"
 
@@ -87,7 +64,7 @@ halaman = st.sidebar.selectbox(
     index=["Home", "Deteksi", "Tentang"].index(st.session_state["halaman"])
 )
 
-# ========== Halaman HOME ==========
+# ========== HALAMAN HOME ==========
 if halaman == "Home":
     st.markdown("<h1 style='text-align: center;'>👁️ Deteksi Penyakit Mata Menggunakan Citra Fundus</h1>", unsafe_allow_html=True)
     st.markdown("## 💬 Apa Itu Citra Fundus?")
@@ -95,8 +72,8 @@ if halaman == "Home":
 
     with col1:
         st.write("""
-        Citra fundus retina adalah gambar bagian belakang mata (retina) yang diambil menggunakan kamera fundus.  
-        Pemeriksaan ini penting dalam dunia medis karena dapat mendeteksi penyakit seperti:
+        Citra fundus retina adalah gambar bagian belakang mata (retina) yang diambil menggunakan kamera fundus.
+        Pemeriksaan ini dapat mendeteksi:
         - **Katarak**
         - **Glaukoma**
         - **Retinopati Diabetik**
@@ -113,13 +90,18 @@ if halaman == "Home":
             st.warning("🖼️ Gambar `mata.png` tidak ditemukan.")
 
     st.markdown("### 🖼️ Contoh Gambar Penyakit Mata")
-    examples = [("cataract.jpg", "Katarak"), ("diabetic.jpeg", "Retinopati Diabetik"), ("glaucoma.jpg", "Glaukoma"), ("normal.jpg", "Normal")]
+    examples = [
+        ("cataract.jpg", "Katarak"),
+        ("diabetic.jpeg", "Retinopati Diabetik"),
+        ("glaucoma.jpg", "Glaukoma"),
+        ("normal.jpg", "Normal")
+    ]
     cols = st.columns(4)
     for col, (img, label) in zip(cols, examples):
         if os.path.exists(img):
             col.image(img, caption=label, use_container_width=True)
 
-# ========== Halaman DETEKSI ==========
+# ========== HALAMAN DETEKSI ==========
 elif halaman == "Deteksi":
     st.markdown("<h1 style='text-align: center;'>👁️ Deteksi Penyakit Mata</h1>", unsafe_allow_html=True)
     st.markdown("<h4 style='text-align: center;'>📤 Unggah gambar fundus retina untuk deteksi otomatis</h4>", unsafe_allow_html=True)
@@ -128,9 +110,6 @@ elif halaman == "Deteksi":
 
     if uploaded_file:
         image = Image.open(uploaded_file).convert("RGB")
-        file_name = uploaded_file.name
-        file_size = uploaded_file.size / 1024
-        width, height = image.size
 
         with st.spinner("🔍 Mendeteksi..."):
             inputs = processor(images=image, return_tensors="pt")
@@ -145,8 +124,8 @@ elif halaman == "Deteksi":
         if confidence < threshold:
             result = f"Deteksi tidak meyakinkan ({confidence*100:.2f}%)"
         else:
-            label = class_names[pred_class].capitalize()
-            result = f"{label_mapping.get(label, label)} ({confidence*100:.2f}%)"
+            label = CLASS_NAMES[pred_class].capitalize()
+            result = f"{LABEL_MAPPING.get(label, label)} ({confidence*100:.2f}%)"
 
         col1, col2 = st.columns([1.1, 1.7])
         with col1:
@@ -156,35 +135,28 @@ elif halaman == "Deteksi":
             st.success(f"Hasil Deteksi: {result}")
             st.markdown("### 📊 Probabilitas Klasifikasi")
             fig, ax = plt.subplots(figsize=(6, 3))
-            ax.barh(class_names, probs.numpy(), color="#1f77b4")
+            ax.barh(CLASS_NAMES, probs.numpy(), color="#1f77b4")
             ax.set_xlim([0, 1])
             ax.set_xlabel("Probabilitas")
             ax.invert_yaxis()
             st.pyplot(fig)
 
-# ========== Halaman TENTANG ==========
+# ========== HALAMAN TENTANG ==========
 elif halaman == "Tentang":
     st.title("Tentang Aplikasi")
     st.markdown("""
-    Aplikasi ini dibuat sebagai bagian dari penelitian tugas akhir mengenai penerapan model Vision Transformer untuk klasifikasi penyakit mata dari citra fundus.
+    Aplikasi ini dibuat sebagai bagian dari penelitian tugas akhir mengenai penerapan Vision Transformer untuk klasifikasi penyakit mata dari citra fundus.
 
     **Dikembangkan Oleh:**
-    - **Nama**: Irvan Yudistiansyah  
-    - **NIM**: 20210040082  
-    - **Prodi**: Teknik Informatika  
+    - **Nama**: Irvan Yudistiansyah
+    - **NIM**: 20210040082
+    - **Prodi**: Teknik Informatika
     - **Universitas**: Nusa Putra Sukabumi
 
     **Teknologi yang digunakan:**
     - Model: `google/vit-base-patch16-224`
     - Framework: PyTorch, Hugging Face Transformers
     - Antarmuka: Streamlit
-
-    **Kategori Deteksi:**
-    - **Katarak**
-    - **Glaukoma**
-    - **Retinopati Diabetik**
-    - **Normal**
-    - **Bukan Gambar Fundus**
     """)
 
 st.markdown("""
@@ -193,11 +165,3 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
-
-# ========== Jalankan Streamlit secara otomatis ==========
-if __name__ == "__main__":
-    import subprocess
-    import sys
-    # Pastikan script dijalankan via `streamlit run`
-    if not any("streamlit" in arg for arg in sys.argv):
-        subprocess.run(["streamlit", "run", __file__])
