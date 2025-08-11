@@ -43,11 +43,19 @@ try:
         MODEL_CKPT,
         num_labels=len(CLASS_NAMES)
     )
-    state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
-    model.load_state_dict(state_dict)
-    model.eval()
 
+    state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
+
+    # Load state_dict dengan strict=False untuk mengabaikan mismatch layer terakhir
+    missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
+    if missing_keys:
+        st.warning(f"⚠ Layer tidak ditemukan di checkpoint: {missing_keys}")
+    if unexpected_keys:
+        st.warning(f"⚠ Layer di checkpoint tidak terpakai: {unexpected_keys}")
+
+    model.eval()
     processor = AutoImageProcessor.from_pretrained(MODEL_CKPT)
+
 except Exception as e:
     st.error(f"❌ Gagal memuat model: {e}")
     st.stop()
@@ -165,4 +173,5 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
+
 
