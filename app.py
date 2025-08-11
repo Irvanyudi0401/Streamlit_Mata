@@ -191,3 +191,4 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
+
