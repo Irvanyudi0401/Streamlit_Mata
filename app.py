@@ -46,12 +46,13 @@ try:
 
     state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
 
-    # Hapus layer terakhir jika jumlah output beda
-    for key in ["classifier.weight", "classifier.bias"]:
-        if key in state_dict and state_dict[key].shape[0] != len(CLASS_NAMES):
-            del state_dict[key]
+    # Buang layer terakhir jika ukurannya beda
+    if "classifier.weight" in state_dict and state_dict["classifier.weight"].shape[0] != len(CLASS_NAMES):
+        del state_dict["classifier.weight"]
+    if "classifier.bias" in state_dict and state_dict["classifier.bias"].shape[0] != len(CLASS_NAMES):
+        del state_dict["classifier.bias"]
 
-    # Load dengan strict=False agar layer yang dihapus tidak bikin error
+    # Load bobot tanpa memaksa semua layer cocok
     model.load_state_dict(state_dict, strict=False)
 
     model.eval()
@@ -174,6 +175,7 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
