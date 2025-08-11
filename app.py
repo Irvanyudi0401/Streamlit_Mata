@@ -5,7 +5,6 @@ from transformers import ViTForImageClassification, AutoImageProcessor
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import io
 import requests
 
 # ========== Konfigurasi ==========
@@ -22,7 +21,7 @@ label_mapping = {
     "Non-fundus": "Bukan Gambar Fundus"
 }
 
-# ========== Unduh dari Google Drive (dengan token) ==========
+# ========== Unduh dari Google Drive ==========
 def download_from_gdrive(file_id, dest_path):
     def get_confirm_token(response):
         for key, value in response.cookies.items():
@@ -57,16 +56,25 @@ if not os.path.exists(model_weights_path):
 
 # ========== Load model ==========
 try:
-    model = ViTForImageClassification.from_pretrained("vit_model", local_files_only=True)
-    model.classifier = torch.nn.Linear(model.classifier.in_features, len(class_names))
-    model.load_state_dict(torch.load(model_weights_path, map_location="cpu", weights_only=False))
+    # Inisialisasi model sesuai arsitektur pretrained
+    model = ViTForImageClassification.from_pretrained(
+        model_ckpt,
+        num_labels=len(class_names)
+    )
+
+    # Load bobot hasil training
+    state_dict = torch.load(model_weights_path, map_location="cpu")
+    model.load_state_dict(state_dict)
     model.eval()
+
+    # Processor untuk preprocessing gambar
+    processor = AutoImageProcessor.from_pretrained(model_ckpt)
+
 except Exception as e:
     st.error(f"❌ Gagal memuat model: {e}")
     st.stop()
 
-processor = AutoImageProcessor.from_pretrained("vit_model", local_files_only=True)
-
+# ========== Streamlit Config ==========
 st.set_page_config(page_title="Deteksi Penyakit Mata", layout="wide")
 
 # ========== Navigasi ==========
@@ -123,7 +131,6 @@ elif halaman == "Deteksi":
         file_name = uploaded_file.name
         file_size = uploaded_file.size / 1024
         width, height = image.size
-        format = image.format
 
         with st.spinner("🔍 Mendeteksi..."):
             inputs = processor(images=image, return_tensors="pt")
@@ -137,7 +144,6 @@ elif halaman == "Deteksi":
         threshold = 0.8
         if confidence < threshold:
             result = f"Deteksi tidak meyakinkan ({confidence*100:.2f}%)"
-            label = None
         else:
             label = class_names[pred_class].capitalize()
             result = f"{label_mapping.get(label, label)} ({confidence*100:.2f}%)"
@@ -188,4 +194,10 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
+# ========== Jalankan Streamlit secara otomatis ==========
+if __name__ == "__main__":
+    import subprocess
+    import sys
+    # Pastikan script dijalankan via `streamlit run`
+    if not any("streamlit" in arg for arg in sys.argv):
+        subprocess.run(["streamlit", "run", __file__])
