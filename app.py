@@ -46,23 +46,13 @@ try:
 
     state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
 
-    # Cek apakah ukuran layer terakhir sama
-    classifier_weight_key = "classifier.weight"
-    classifier_bias_key = "classifier.bias"
+    # Hapus layer terakhir jika jumlah output beda
+    for key in ["classifier.weight", "classifier.bias"]:
+        if key in state_dict and state_dict[key].shape[0] != len(CLASS_NAMES):
+            del state_dict[key]
 
-    if (classifier_weight_key in state_dict and 
-        state_dict[classifier_weight_key].shape[0] != len(CLASS_NAMES)):
-        st.warning("⚠ Ukuran layer terakhir tidak cocok, akan di-reset.")
-        # Hapus layer terakhir dari state_dict agar tidak dimuat
-        del state_dict[classifier_weight_key]
-        del state_dict[classifier_bias_key]
-
-    # Load bobot dengan strict=False agar layer terakhir diabaikan
-    missing_keys, unexpected_keys = model.load_state_dict(state_dict, strict=False)
-    if missing_keys:
-        st.info(f"ℹ Missing keys (tidak dimuat): {missing_keys}")
-    if unexpected_keys:
-        st.info(f"ℹ Unexpected keys (tidak terpakai): {unexpected_keys}")
+    # Load dengan strict=False agar layer yang dihapus tidak bikin error
+    model.load_state_dict(state_dict, strict=False)
 
     model.eval()
     processor = AutoImageProcessor.from_pretrained(MODEL_CKPT)
@@ -184,6 +174,7 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
+
 
 
 
