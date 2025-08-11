@@ -51,20 +51,17 @@ if not os.path.exists(MODEL_WEIGHTS_PATH):
 
 # ========== LOAD MODEL ==========
 try:
+    # Load backbone + classifier baru dengan jumlah kelas sesuai CLASS_NAMES
     model = ViTForImageClassification.from_pretrained(
         MODEL_CKPT,
-        num_labels=len(CLASS_NAMES)
+        num_labels=len(CLASS_NAMES),
+        ignore_mismatched_sizes=True  # 🔹 ini kunci untuk hindari size mismatch
     )
 
-    state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
-
-    # Hapus layer terakhir jika ukurannya beda
-    for key in ["classifier.weight", "classifier.bias"]:
-        if key in state_dict and state_dict[key].shape[0] != len(CLASS_NAMES):
-            st.warning(f"⚠ Layer {key} dihapus karena ukuran tidak cocok.")
-            del state_dict[key]
-
-    model.load_state_dict(state_dict, strict=False)
+    # Load bobot hasil training jika memang punya
+    if os.path.exists(MODEL_WEIGHTS_PATH):
+        state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
+        model.load_state_dict(state_dict, strict=False)
 
     model.eval()
     processor = AutoImageProcessor.from_pretrained(MODEL_CKPT)
@@ -186,3 +183,4 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
+
