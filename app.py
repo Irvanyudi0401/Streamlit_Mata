@@ -39,14 +39,16 @@ if not os.path.exists(MODEL_WEIGHTS_PATH):
 
 # ========== LOAD MODEL ==========
 try:
+    # Buat model dengan jumlah kelas sesuai CLASS_NAMES
     model = ViTForImageClassification.from_pretrained(
         MODEL_CKPT,
         num_labels=len(CLASS_NAMES)
     )
 
+    # Muat bobot dari file .pth
     state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
 
-    # Buang layer terakhir jika ukurannya beda
+    # Hapus layer terakhir jika jumlah output-nya beda
     if "classifier.weight" in state_dict and state_dict["classifier.weight"].shape[0] != len(CLASS_NAMES):
         del state_dict["classifier.weight"]
     if "classifier.bias" in state_dict and state_dict["classifier.bias"].shape[0] != len(CLASS_NAMES):
@@ -175,8 +177,3 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
-
-
-
-
-
