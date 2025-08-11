@@ -26,7 +26,6 @@ LABEL_MAPPING = {
 
 # ========== DOWNLOAD MODEL ==========
 def download_model_zip(file_id, dest_path):
-    """Unduh file ZIP model dari Google Drive"""
     url = f"https://drive.google.com/uc?id={file_id}"
     gdown.download(url, dest_path, quiet=False)
 
@@ -35,7 +34,6 @@ try:
         st.info("🔄 Mengunduh model ZIP dari Google Drive...")
         download_model_zip(GDRIVE_FILE_ID, MODEL_ZIP_PATH)
 
-        # Ekstrak ZIP
         st.info("📦 Mengekstrak file ZIP...")
         with zipfile.ZipFile(MODEL_ZIP_PATH, 'r') as zip_ref:
             zip_ref.extractall(MODEL_DIR)
@@ -43,8 +41,8 @@ try:
         os.remove(MODEL_ZIP_PATH)
 
         if os.path.exists(MODEL_WEIGHTS_PATH):
-            size = os.path.getsize(MODEL_WEIGHTS_PATH) / (1024 * 1024)
-            st.success(f"✅ Model berhasil diunduh & diekstrak ({size:.2f} MB)")
+            size_mb = os.path.getsize(MODEL_WEIGHTS_PATH) / (1024 * 1024)
+            st.success(f"✅ Model berhasil diunduh & diekstrak ({size_mb:.2f} MB)")
         else:
             st.error("❌ File vit_model.pth tidak ditemukan setelah ekstrak.")
             st.stop()
@@ -57,14 +55,14 @@ try:
     model = ViTForImageClassification.from_pretrained(
         MODEL_CKPT,
         num_labels=len(CLASS_NAMES),
-        ignore_mismatched_sizes=True  # Hindari error size mismatch
+        ignore_mismatched_sizes=True  # agar tidak error jika bobot tidak cocok ukuran
     )
 
     if os.path.exists(MODEL_WEIGHTS_PATH):
         state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
         model.load_state_dict(state_dict, strict=False)
     else:
-        st.warning("⚠ Bobot vit_model.pth tidak ditemukan, menggunakan bobot pretrained.")
+        st.warning("⚠ Bobot vit_model.pth tidak ditemukan, menggunakan bobot pretrained bawaan.")
 
     model.eval()
     processor = AutoImageProcessor.from_pretrained(MODEL_CKPT)
@@ -102,7 +100,7 @@ if halaman == "Home":
 
         if st.button("🚀 Mulai Deteksi Sekarang"):
             st.session_state["halaman"] = "Deteksi"
-            st.rerun()
+            st.experimental_rerun()
 
     with col2:
         if os.path.exists("mata.png"):
@@ -130,37 +128,43 @@ elif halaman == "Deteksi":
     uploaded_file = st.file_uploader("Unggah gambar fundus retina", type=["jpg", "jpeg", "png"])
 
     if uploaded_file:
-        image = Image.open(uploaded_file).convert("RGB")
+        try:
+            image = Image.open(uploaded_file).convert("RGB")
 
-        with st.spinner("🔍 Mendeteksi..."):
-            inputs = processor(images=image, return_tensors="pt")
-            with torch.no_grad():
-                outputs = model(**inputs)
-                probs = torch.nn.functional.softmax(outputs.logits[0], dim=0)
+            with st.spinner("🔍 Mendeteksi..."):
+                inputs = processor(images=image, return_tensors="pt")
+                with torch.no_grad():
+                    outputs = model(**inputs)
+                    probs = torch.nn.functional.softmax(outputs.logits[0], dim=0)
 
-        pred_class = torch.argmax(probs).item()
-        confidence = probs[pred_class].item()
+            pred_class = torch.argmax(probs).item()
+            confidence = probs[pred_class].item()
 
-        threshold = 0.8
-        if confidence < threshold:
-            result = f"Deteksi tidak meyakinkan ({confidence*100:.2f}%)"
-        else:
-            label = CLASS_NAMES[pred_class].capitalize()
-            result = f"{LABEL_MAPPING.get(label, label)} ({confidence*100:.2f}%)"
+            threshold = 0.8
+            if confidence < threshold:
+                result = f"Deteksi tidak meyakinkan ({confidence*100:.2f}%)"
+            else:
+                # Gunakan label mapping dengan format kapitalisasi tepat
+                key_label = CLASS_NAMES[pred_class].replace("-", " ").title().replace(" ", "")
+                mapped_label = LABEL_MAPPING.get(key_label, CLASS_NAMES[pred_class].capitalize())
+                result = f"{mapped_label} ({confidence*100:.2f}%)"
 
-        col1, col2 = st.columns([1.1, 1.7])
-        with col1:
-            st.image(image, caption="🖼️ Gambar Fundus", use_container_width=True)
+            col1, col2 = st.columns([1.1, 1.7])
+            with col1:
+                st.image(image, caption="🖼️ Gambar Fundus", use_container_width=True)
 
-        with col2:
-            st.success(f"Hasil Deteksi: {result}")
-            st.markdown("### 📊 Probabilitas Klasifikasi")
-            fig, ax = plt.subplots(figsize=(6, 3))
-            ax.barh(CLASS_NAMES, probs.numpy(), color="#1f77b4")
-            ax.set_xlim([0, 1])
-            ax.set_xlabel("Probabilitas")
-            ax.invert_yaxis()
-            st.pyplot(fig)
+            with col2:
+                st.success(f"Hasil Deteksi: {result}")
+                st.markdown("### 📊 Probabilitas Klasifikasi")
+                fig, ax = plt.subplots(figsize=(6, 3))
+                ax.barh(CLASS_NAMES, probs.numpy(), color="#1f77b4")
+                ax.set_xlim([0, 1])
+                ax.set_xlabel("Probabilitas")
+                ax.invert_yaxis()
+                st.pyplot(fig)
+
+        except Exception as e:
+            st.error(f"❌ Terjadi kesalahan saat memproses gambar: {e}")
 
 # ========== HALAMAN TENTANG ==========
 elif halaman == "Tentang":
@@ -180,6 +184,7 @@ elif halaman == "Tentang":
     - Antarmuka: Streamlit
     """)
 
+# ========== FOOTER ==========
 st.markdown("""
 <hr style="margin-top: 50px;">
 <div style="text-align: center; font-size: 13px; color: gray;">
