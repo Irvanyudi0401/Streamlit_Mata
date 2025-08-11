@@ -6,10 +6,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import gdown
+import zipfile
 
 # ========== KONFIGURASI ==========
 MODEL_CKPT = "google/vit-base-patch16-224"
-MODEL_WEIGHTS_PATH = "vit_model.pth"
+MODEL_DIR = "vit_model"
+MODEL_ZIP_PATH = "vit_model.zip"
+MODEL_WEIGHTS_PATH = os.path.join(MODEL_DIR, "vit_model.pth")
 GDRIVE_FILE_ID = "1hPaIgD9340jrUuE6iCrmE4NvSJk81sYQ"
 CLASS_NAMES = ["cataract", "diabetic", "glaucoma", "normal", "non-fundus"]
 
@@ -22,39 +25,45 @@ LABEL_MAPPING = {
 }
 
 # ========== DOWNLOAD MODEL ==========
-def download_model_from_gdrive(file_id, dest_path):
-    """Unduh file dari Google Drive menggunakan gdown"""
+def download_model_zip(file_id, dest_path):
+    """Unduh file ZIP model dari Google Drive"""
     url = f"https://drive.google.com/uc?id={file_id}"
     gdown.download(url, dest_path, quiet=False)
 
 if not os.path.exists(MODEL_WEIGHTS_PATH):
-    st.info("🔄 Mengunduh model dari Google Drive...")
+    st.info("🔄 Mengunduh model ZIP dari Google Drive...")
     try:
-        download_model_from_gdrive(GDRIVE_FILE_ID, MODEL_WEIGHTS_PATH)
+        download_model_zip(GDRIVE_FILE_ID, MODEL_ZIP_PATH)
+
+        # Ekstrak ZIP
+        st.info("📦 Mengekstrak file ZIP...")
+        with zipfile.ZipFile(MODEL_ZIP_PATH, 'r') as zip_ref:
+            zip_ref.extractall(MODEL_DIR)
+
+        # Hapus ZIP setelah ekstrak
+        os.remove(MODEL_ZIP_PATH)
+
         size = os.path.getsize(MODEL_WEIGHTS_PATH) / (1024 * 1024)
-        st.success(f"✅ Model berhasil diunduh ({size:.2f} MB)")
+        st.success(f"✅ Model berhasil diunduh & diekstrak ({size:.2f} MB)")
     except Exception as e:
-        st.error(f"❌ Gagal mengunduh model: {e}")
+        st.error(f"❌ Gagal mengunduh/mengekstrak model: {e}")
         st.stop()
 
 # ========== LOAD MODEL ==========
 try:
-    # Buat model dengan jumlah kelas sesuai CLASS_NAMES
     model = ViTForImageClassification.from_pretrained(
         MODEL_CKPT,
         num_labels=len(CLASS_NAMES)
     )
 
-    # Muat bobot dari file .pth
     state_dict = torch.load(MODEL_WEIGHTS_PATH, map_location="cpu")
 
-    # Hapus layer terakhir jika jumlah output-nya beda
-    if "classifier.weight" in state_dict and state_dict["classifier.weight"].shape[0] != len(CLASS_NAMES):
-        del state_dict["classifier.weight"]
-    if "classifier.bias" in state_dict and state_dict["classifier.bias"].shape[0] != len(CLASS_NAMES):
-        del state_dict["classifier.bias"]
+    # Hapus layer terakhir jika ukurannya beda
+    for key in ["classifier.weight", "classifier.bias"]:
+        if key in state_dict and state_dict[key].shape[0] != len(CLASS_NAMES):
+            st.warning(f"⚠ Layer {key} dihapus karena ukuran tidak cocok.")
+            del state_dict[key]
 
-    # Load bobot tanpa memaksa semua layer cocok
     model.load_state_dict(state_dict, strict=False)
 
     model.eval()
