@@ -10,7 +10,7 @@ import gdown
 # ========== KONFIGURASI ==========
 MODEL_CKPT = "google/vit-base-patch16-224"
 MODEL_WEIGHTS_PATH = "vit_model.pth"
-GDRIVE_FILE_ID = "1neG3g7T5xv-2BbB2OZ_LtiFuFmtBOzIa"
+GDRIVE_FILE_ID = "1hPaIgD9340jrUuE6iCrmE4NvSJk81sYQ"
 CLASS_NAMES = ["cataract", "diabetic", "glaucoma", "normal", "non-fundus"]
 
 LABEL_MAPPING = {
@@ -165,3 +165,4 @@ st.markdown("""
 &copy; 2025 | Dibuat oleh Irvan Yudistiansyah | Untuk keperluan edukasi & skripsi
 </div>
 """, unsafe_allow_html=True)
+
